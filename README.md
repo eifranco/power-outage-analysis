@@ -1,6 +1,6 @@
 # When the Lights Go Out: An Analysis of Major Power Outages
 
-**Name:** Emiliano Franco
+**By:** Adam Hamadene, Emiliano Franco
 
 ## Introduction
 
