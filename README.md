@@ -32,11 +32,11 @@ After cleaning the dataset, there are **1534 rows**, with each row representing 
 | `POPULATION`            | The population of the state where the outage occurred.                                                           |
 | `POPPCT_URBAN`          | The percentage of the state population living in urban areas.                                                    |
 
-Data Cleaning and Exploratory Data Analysis
+## Data Cleaning and Exploratory Data Analysis
 
 The first step in this project was cleaning the outage dataset so that it could be used for analysis. Since the data was stored in an Excel file, the spreadsheet included extra rows and formatting information that were not actual outage observations.
 
-Data Cleaning
+### Data Cleaning
 
 I started by loading the Excel file using the correct header row. The first few rows of the spreadsheet contained title information, notes, and unit descriptions, so I skipped the unnecessary rows and removed the row that only contained units. I also dropped the variables column because it was part of the spreadsheet formatting and did not provide useful information for my analysis.
 
@@ -57,6 +57,64 @@ The first few rows of the cleaned DataFrame are shown below, with a smaller set 
 | Minnesota    | MRO           | East North Central | severe weather     |              3000 |                70000 | 2010-10-26 20:00:00 |
 | Minnesota    | MRO           | East North Central | severe weather     |              2550 |                68200 | 2012-06-19 04:30:00 |
 | Minnesota    | MRO           | East North Central | severe weather     |              1740 |               250000 | 2015-07-18 02:00:00 |
+
+
+### Univariate Analysis
+The histogram below shows the distribution of `OUTAGE.DURATION`, measured in minutes. I used a log scale on the y-axis because outage durations are highly right-skewed: most outages are relatively short compared to the longest outages, but a small number of major outages last for much longer. Only 7 outages out of 1534 lasted longer than 40,000 minutes.
+
+<iframe
+  src="assets/outage-duration-distribution.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+### Bivariate Analysis
+
+The bar chart below shows the number of major power outages in each `CAUSE.CATEGORY`. This helps summarize which causes appear most frequently in the dataset. Severe weather is one of the most common categories, which supports looking more closely at whether severe weather outages are also associated with longer outage durations.
+
+<iframe
+  src="assets/cause-category-counts.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+
+The bar chart below shows the top 15 states by average outage duration after removing outages longer than 40,000 minutes. I removed these extremely long outages so that a small number of outliers would not dominate the state averages. This plot shows that average outage duration varies noticeably by state, suggesting that location may be associated with outage severity. However, these averages should be interpreted carefully because some states may have fewer outage records than others.
+
+<iframe
+  src="assets/avg-duration-by-state-under-40k.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+
+The box plot below shows the distribution of `OUTAGE.DURATION` across different `CAUSE.CATEGORY` values after removing outages longer than 40,000 minutes. I excluded these extreme values so that the main patterns across cause categories would be easier to interpret. This plot suggests that outage duration varies noticeably by cause, with some categories—especially severe weather—showing longer typical outage durations and greater variability than others.
+
+<iframe
+  src="assets/outage-duration-by-cause-under-40k.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+### Interesting Aggregates
+The table below groups outages by `CAUSE.CATEGORY` and summarizes several measures of outage severity. For each cause category, I calculated the number of outages, the average outage duration, the median outage duration, the average number of customers affected, and the median number of customers affected. This table is useful because it compares both the frequency and severity of different outage causes. For example, a cause category may not have the most outages overall, but it may still be associated with longer durations or more customers affected.
+
+| CAUSE.CATEGORY                |   outage_count |   avg_duration |   median_duration |   avg_customers_affected |   median_customers_affected |
+|:------------------------------|---------------:|---------------:|------------------:|-------------------------:|----------------------------:|
+| fuel supply emergency         |             38 |       13484    |            3960   |                     0.14 |                         0   |
+| severe weather                |            744 |        3883.99 |            2460   |                188575    |                    110433   |
+| equipment failure             |             55 |        1816.91 |             221   |                101936    |                     45451.5 |
+| public appeal                 |             69 |        1468.45 |             455   |                  7618.76 |                         0   |
+| system operability disruption |            123 |         728.87 |             215   |                211066    |                     69000   |
+| intentional attack            |            403 |         429.98 |              56   |                  1790.53 |                         0   |
+| islanding                     |             44 |         200.55 |              77.5 |                  6169.09 |                      2342.5 |
+
+
+
 
 ## Assessment of Missingness
 
