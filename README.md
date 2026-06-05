@@ -2,7 +2,6 @@
 
 **By:** Adam Hamadene, Emiliano Franco
 
-## Introduction
 
 ## Introduction
 
@@ -33,9 +32,69 @@ After cleaning the dataset, there are **1534 rows**, with each row representing 
 | `POPULATION`            | The population of the state where the outage occurred.                                                           |
 | `POPPCT_URBAN`          | The percentage of the state population living in urban areas.                                                    |
 
-## Data Cleaning and Exploratory Data Analysis
+Data Cleaning and Exploratory Data Analysis
+
+The first step in this project was cleaning the outage dataset so that it could be used for analysis. Since the data was stored in an Excel file, the spreadsheet included extra rows and formatting information that were not actual outage observations.
+
+Data Cleaning
+
+I started by loading the Excel file using the correct header row. The first few rows of the spreadsheet contained title information, notes, and unit descriptions, so I skipped the unnecessary rows and removed the row that only contained units. I also dropped the variables column because it was part of the spreadsheet formatting and did not provide useful information for my analysis.
+
+Next, I combined the separate outage start date and start time columns into one timestamp column called OUTAGE.START. I did the same for the restoration date and restoration time columns, creating a new timestamp column called OUTAGE.RESTORATION. This made the dataset easier to work with because each outage now has one clear start timestamp and one clear restoration timestamp.
+
+After creating the timestamp columns, I created additional time-based columns from OUTAGE.START: START.YEAR, START.MONTH, START.HOUR, and START.DAY_OF_WEEK. These columns allow me to analyze whether outage patterns vary by year, month, time of day, or day of the week.
+
+I also created a COMPUTED.DURATION column by subtracting OUTAGE.START from OUTAGE.RESTORATION and converting the result into minutes. I compared this computed duration to the original OUTAGE.DURATION column to check whether the provided duration values were consistent with the timestamp data. Most values matched, but some differed by exactly 60 minutes, which may be due to time recording conventions or daylight saving time. Because OUTAGE.DURATION was provided directly in the original dataset, I kept it as the main duration column for my analysis.
+
+The main columns I focused on for this part of the project include YEAR, MONTH, U.S._STATE, NERC.REGION, CLIMATE.REGION, CLIMATE.CATEGORY, CAUSE.CATEGORY, OUTAGE.DURATION, DEMAND.LOSS.MW, CUSTOMERS.AFFECTED, OUTAGE.START, and OUTAGE.RESTORATION.
+
+The first few rows of the cleaned DataFrame are shown below, with a smaller set of columns selected for readability.
+
+| U.S._STATE   | NERC.REGION   | CLIMATE.REGION     | CAUSE.CATEGORY     |   OUTAGE.DURATION |   CUSTOMERS.AFFECTED | OUTAGE.START        |
+|:-------------|:--------------|:-------------------|:-------------------|------------------:|---------------------:|:--------------------|
+| Minnesota    | MRO           | East North Central | severe weather     |              3060 |                70000 | 2011-07-01 17:00:00 |
+| Minnesota    | MRO           | East North Central | intentional attack |                 1 |                  nan | 2014-05-11 18:38:00 |
+| Minnesota    | MRO           | East North Central | severe weather     |              3000 |                70000 | 2010-10-26 20:00:00 |
+| Minnesota    | MRO           | East North Central | severe weather     |              2550 |                68200 | 2012-06-19 04:30:00 |
+| Minnesota    | MRO           | East North Central | severe weather     |              1740 |               250000 | 2015-07-18 02:00:00 |
 
 ## Assessment of Missingness
+
+### NMAR Analysis
+
+Several columns in the dataset contain missing values. One column that could possibly be **NMAR** is `CUSTOMERS.AFFECTED`, which records the number of customers affected by a major power outage. This column could be NMAR because the likelihood of a value being missing may depend on the unreported value itself. For example, if the number of affected customers was very small, uncertain, or difficult to estimate, then it may have been less likely to be reported. Since the dataset combines outage records from different sources, differences in reporting practices could also contribute to missing values.
+
+Additional data that could help determine whether `CUSTOMERS.AFFECTED` is actually MAR would include information about the reporting utility company or agency for each outage. If missingness in `CUSTOMERS.AFFECTED` depends on which company reported the outage, then the missingness could be explained by an observed variable and would be more consistent with MAR. Other useful information would include whether each reporting company was required to report customer impact and whether the outage occurred in an area with reliable customer tracking systems.
+
+### Missingness Dependency
+
+To test missingness dependency, I focused on the missingness of `DEMAND.LOSS.MW`, which records the amount of electricity demand lost during an outage in megawatts. I created a Boolean column indicating whether `DEMAND.LOSS.MW` was missing for each outage. Then, I used permutation tests to determine whether the missingness of this column depends on other observed columns in the dataset.
+
+#### Cause Category
+
+First, I examined whether the missingness of `DEMAND.LOSS.MW` depends on `CAUSE.CATEGORY`.
+
+**Null Hypothesis:** The distribution of `CAUSE.CATEGORY` is the same when `DEMAND.LOSS.MW` is missing and when it is not missing.
+
+**Alternative Hypothesis:** The distribution of `CAUSE.CATEGORY` is different when `DEMAND.LOSS.MW` is missing compared to when it is not missing.
+
+Since `CAUSE.CATEGORY` is categorical, I used total variation distance as the test statistic. The observed TVD was approximately **0.179**, and the p-value from the permutation test was **less than 0.001**. Since this p-value is below the significance level of 0.05, I reject the null hypothesis. This suggests that the distribution of `CAUSE.CATEGORY` is significantly different depending on whether `DEMAND.LOSS.MW` is missing. In other words, the missingness of `DEMAND.LOSS.MW` appears to depend on `CAUSE.CATEGORY`.
+
+This result suggests that the missingness of `DEMAND.LOSS.MW` is not MCAR, since it depends on an observed column in the dataset. Because the missingness is related to an observed variable, this result is more consistent with MAR.
+
+<!-- Add Cause Category missingness plot here later -->
+
+#### Start Day of Week
+
+Next, I examined whether the missingness of `DEMAND.LOSS.MW` depends on `START.DAY_OF_WEEK`.
+
+**Null Hypothesis:** The distribution of `START.DAY_OF_WEEK` is the same when `DEMAND.LOSS.MW` is missing and when it is not missing.
+
+**Alternative Hypothesis:** The distribution of `START.DAY_OF_WEEK` is different when `DEMAND.LOSS.MW` is missing compared to when it is not missing.
+
+Again, I used total variation distance as the test statistic because `START.DAY_OF_WEEK` is categorical. The observed TVD was **___**, and the p-value from the permutation test was **___**. Since this p-value is **___** than 0.05, I **___** the null hypothesis. This suggests that the missingness of `DEMAND.LOSS.MW` **___** depend on `START.DAY_OF_WEEK`.
+
+<!-- Add Start Day of Week missingness plot here later -->
 
 ## Hypothesis Testing
 
