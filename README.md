@@ -98,6 +98,48 @@ Again, I used total variation distance as the test statistic because `START.DAY_
 
 ## Hypothesis Testing
 
+For my hypothesis test, I wanted to investigate whether outages caused by severe weather tend to be more severe than outages caused by other factors. Since my project focuses on outage severity, I used `OUTAGE.DURATION` as the main severity measure.
+
+The two columns used in this hypothesis test were:
+
+| Column            | Description                                                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `CAUSE.CATEGORY`  | The broad cause of the outage. I used this column to separate outages into severe weather outages and non-severe-weather outages. |
+| `OUTAGE.DURATION` | The duration of the outage in minutes. I used this column to measure outage severity.                                             |
+
+### Hypotheses
+
+**Null Hypothesis:**
+The duration of major power outages caused by severe weather and the duration of major power outages caused by other causes come from the same distribution. Any observed difference in outage duration is due to random chance.
+
+**Alternative Hypothesis:**
+Major power outages caused by severe weather tend to last longer than major power outages caused by other causes.
+
+### Test Statistic
+
+The test statistic I used was the difference in mean outage duration between severe weather outages and non-severe-weather outages:
+
+**Mean duration of severe weather outages − mean duration of non-severe-weather outages**
+
+This is a valid test statistic because the alternative hypothesis asks whether severe weather outages tend to have longer durations. Larger positive values of this statistic support the alternative hypothesis.
+
+### Permutation Test
+
+To perform the permutation test, I first removed rows with missing values in either `CAUSE.CATEGORY` or `OUTAGE.DURATION`. Then, I created a Boolean column indicating whether each outage was caused by severe weather. Under the null hypothesis, the severe weather labels should not be meaningfully related to outage duration, so I repeatedly shuffled the severe weather labels and recalculated the difference in mean outage duration.
+
+The observed difference in mean outage duration was **2537 minutes**. This means that, in the observed dataset, severe weather outages lasted about 2537 minutes longer on average than outages caused by other factors.
+
+The p-value from the permutation test was **less than 0.001**. Although the computed p-value appeared as 0, this means that none of the simulated test statistics from the permutation test were as large as the observed statistic. Therefore, it is better to report the p-value as less than 0.001 rather than exactly 0.
+
+Using a significance level of 0.05, I reject the null hypothesis. The data provide evidence that major power outages caused by severe weather tend to last longer than major power outages caused by other causes.
+
+<iframe
+  src="assets/hypothesis-test.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
 ## Framing a Prediction Problem
 
 ## Baseline Model
