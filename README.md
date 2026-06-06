@@ -240,8 +240,97 @@ Using a significance level of 0.05, we reject the null hypothesis. The data prov
 
 ## Framing a Prediction Problem
 
+For the prediction portion of this project, we aim to predict the duration of a major power outage, `OUTAGE.DURATION`, measured in minutes. This prediction would be made at or near the moment the outage is first reported. Since `OUTAGE.DURATION` is a quantitative variable, this is a **regression problem**.
+
+Our response variable is `OUTAGE.DURATION` because it directly represents one important measure of outage severity. Longer outages leave customers without power for longer periods of time, create greater economic costs, and increase the strain on utility operators and emergency response services. Predicting outage duration near the start of an outage could help utility companies and emergency services decide how quickly to deploy repair crews, how many resources to allocate, and whether the outage is likely to become a long-lasting event.
+
+This prediction problem also connects to our earlier hypothesis test. In Step 4, we found that severe weather outages lasted, on average, 2,537 minutes longer than outages caused by other factors. This suggests that characteristics known early in an outage, such as cause category, timing, and regional conditions, may be useful for predicting outage duration.
+
+We use **RMSE**, or root mean squared error, as our evaluation metric. RMSE is appropriate for this regression problem because it measures prediction error in the same units as the response variable: minutes. We chose RMSE over MAE because outage duration is highly right-skewed, meaning there are some very long outages. In this context, very large prediction errors are especially costly, and RMSE penalizes large errors more heavily than MAE because it squares the residuals before averaging them.
+
+At the time of prediction, we only want to use features that would reasonably be known at or near the start of the outage. The features we consider available at prediction time include `CAUSE.CATEGORY`, `CLIMATE.REGION`, `MONTH`, `ANOMALY.LEVEL`, `POPULATION`, and `TOTAL.PRICE`. These features describe the reported cause of the outage, regional climate information, timing, state-level population, and electricity price information that would be known before or at the beginning of the outage.
+
+We do not use `CUSTOMERS.AFFECTED` or `DEMAND.LOSS.MW` as predictors because these values are usually determined as the outage unfolds or after the outage has occurred. Including them would give the model information that would not realistically be available at the time of prediction, which would lead to data leakage.
+
 ## Baseline Model
+
+Our baseline model is a linear regression model implemented using a single sklearn `Pipeline`. The model uses four features: `CAUSE.CATEGORY`, `CLIMATE.REGION`, `MONTH`, and `ANOMALY.LEVEL`.
+
+Of these features, `CAUSE.CATEGORY` and `CLIMATE.REGION` are nominal categorical features. Since these columns do not have a natural ordering, we one-hot encoded them using `OneHotEncoder` with `handle_unknown='ignore'`. This allows the model to use categorical information while also avoiding errors if an unseen category appears in the test set. The features `MONTH` and `ANOMALY.LEVEL` are quantitative features, so they were passed through the pipeline without categorical encoding. There are no ordinal features in this baseline model.
+
+We evaluated the model on a held-out test set that was not used during training. The baseline linear regression model achieved a test RMSE of **3654.94 minutes**. For comparison, a naive model that simply predicts the mean outage duration achieved an RMSE of **4309.62 minutes**. Since the baseline model performs better than the naive model, this suggests that the selected features contain some predictive signal.
+
+However, we would not consider this baseline model to be good in a practical setting. An RMSE of 3654.94 minutes is about **61 hours**, which is a very large average prediction error for utility operators or emergency responders making real-time decisions. In addition, linear regression assumes a relatively linear relationship between the features and the response variable, but `OUTAGE.DURATION` is highly right-skewed and likely has nonlinear relationships with cause, climate, and time-based features. Because of this, the baseline model is useful as a starting point, but there is still room for improvement in the final model.
 
 ## Final Model
 
+For our final model, we used a `RandomForestRegressor`. We chose this model because outage duration is highly right-skewed and likely has nonlinear relationships with features such as cause category, climate region, population, and electricity price. A random forest can capture nonlinear patterns and interactions between features more naturally than a linear regression model.
+
+Our final model includes the baseline features from the previous model and adds three engineered features.
+
+The first engineered feature is `IS_SEVERE_WEATHER`, a binary indicator for whether the outage was caused by severe weather. This feature is motivated by our hypothesis test in Step 4, where we found that severe weather outages lasted about 2,537 minutes longer on average than outages caused by other factors. Creating this feature allows the model to directly use the severe weather signal instead of relying only on the one-hot encoded `CAUSE.CATEGORY` values.
+
+The second engineered feature is `LOG_POPULATION`, the natural log of the state population. Larger and more populated states may have larger, more complex power grids, which could affect restoration time. Since population varies widely across states, using the log transformation reduces the influence of extremely large population values and makes the feature easier for the model to use.
+
+The third engineered feature is a transformed version of `TOTAL.PRICE`, the average electricity price. We used a `QuantileTransformer` on this feature to reduce the effect of extreme price values and make the distribution more even. Electricity price may reflect regional differences in electricity markets, infrastructure, and reliability, so it may provide useful information when predicting outage duration.
+
+Before tuning the final model, we selected three hyperparameters to optimize:
+
+| Hyperparameter      | Values searched | Reason                                                                                                       |
+| ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------ |
+| `n_estimators`      | 100, 200, 300   | Controls the number of trees in the forest. More trees can reduce variance, but increase computation time.   |
+| `max_depth`         | 10, 20, None    | Controls how deep each tree can grow. Limiting depth can help reduce overfitting.                            |
+| `min_samples_split` | 2, 5            | Controls the minimum number of samples required to split an internal node. Larger values add regularization. |
+
+We used `GridSearchCV` with 5-fold cross-validation to search across these hyperparameter combinations. The scoring metric was RMSE, matching the evaluation metric used for the baseline model.
+
+The best hyperparameter combination was:
+
+| Hyperparameter      | Best value |
+| ------------------- | ---------: |
+| `n_estimators`      |        300 |
+| `max_depth`         |         10 |
+| `min_samples_split` |          5 |
+
+The fact that `max_depth=10` performed better than `max_depth=None` suggests that limiting tree depth helped prevent overfitting on this dataset.
+
+The final random forest model achieved a test RMSE of **3356.11 minutes** on the held-out test set. The baseline linear regression model had a test RMSE of **3654.94 minutes**, so the final model improved RMSE by **298.83 minutes**. This improvement suggests that the engineered features and nonlinear model helped the model better capture patterns associated with outage duration.
+
+
 ## Fairness Analysis
+
+For our fairness analysis, we investigated whether our final model performs differently for outages in high-population states compared to outages in low-population states. States with larger populations may have larger and more complex electrical grid networks, which could make outage duration harder to predict. If the model makes systematically larger errors for one population group, then the model may be less reliable for that group.
+
+We split the data into two groups based on the median value of `POPULATION`:
+
+* **Group X:** High-population states, where `POPULATION` is greater than or equal to the median population.
+* **Group Y:** Low-population states, where `POPULATION` is less than the median population.
+
+Since our final model is a regression model, we used **RMSE** as the evaluation metric. RMSE is appropriate because it measures prediction error in minutes and penalizes larger errors more heavily.
+
+**Null Hypothesis:**
+Our model is fair. The RMSE for high-population states is approximately equal to the RMSE for low-population states, and any observed difference is due to random chance.
+
+**Alternative Hypothesis:**
+Our model is unfair. The RMSE for high-population states is different from the RMSE for low-population states.
+
+**Test Statistic:**
+The absolute difference in RMSE between the two groups:
+
+**|RMSE for high-population states − RMSE for low-population states|**
+
+We used a significance level of **0.05**. Since the alternative hypothesis is that the model performs differently for the two groups, we used an absolute difference in RMSE as the test statistic.
+
+The actual absolute difference in RMSE between high-population and low-population states was **34.44 minutes**. The permutation test gave a p-value of **0.970**. At a significance level of 0.05, we fail to reject the null hypothesis.
+
+This means that we do not have statistical evidence that the model performs differently for high-population states compared to low-population states. The RMSE values for the two groups were very similar: **3372.28 minutes** for high-population states and **3337.84 minutes** for low-population states. Based on this fairness test, the model does not appear to perform worse for either population group.
+
+The plot below shows the empirical distribution of absolute RMSE differences from the fairness permutation test. The vertical line marks the observed difference of 34.44 minutes. Since the observed value falls well within the range of differences produced by random shuffling, the plot supports our decision to fail to reject the null hypothesis.
+
+<iframe
+  src="assets/fairness-population-rmse.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
