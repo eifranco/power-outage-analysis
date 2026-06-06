@@ -42,7 +42,7 @@ We started by loading the Excel file using the correct header row. The first few
 
 Next, we combined the separate outage start date and start time columns into one timestamp column called OUTAGE.START. We did the same for the restoration date and restoration time columns, creating a new timestamp column called OUTAGE.RESTORATION. This made the dataset easier to work with because each outage now has one clear start timestamp and one clear restoration timestamp.
 
-After creating the timestamp columns, we created additional time-based columns from OUTAGE.START: START.YEAR, START.MONTH, START.HOUR, and START.DAY_OF_WEEK. These columns allow me to analyze whether outage patterns vary by year, month, time of day, or day of the week.
+After creating the timestamp columns, we created additional time-based columns from OUTAGE.START: START.YEAR, START.MONTH, START.HOUR, and START.DAY_OF_WEEK. These columns allow us to analyze whether outage patterns vary by year, month, time of day, or day of the week.
 
 We also created a COMPUTED.DURATION column by subtracting OUTAGE.START from OUTAGE.RESTORATION and converting the result into minutes. We compared this computed duration to the original OUTAGE.DURATION column to check whether the provided duration values were consistent with the timestamp data. Most values matched, but some differed by exactly 60 minutes, which may be due to time recording conventions or daylight saving time. Because OUTAGE.DURATION was provided directly in the original dataset, we kept it as the main duration column for our analysis.
 
@@ -168,7 +168,7 @@ The plot below compares the distribution of `CAUSE.CATEGORY` for outages where `
 
 Since `CAUSE.CATEGORY` is categorical, we used total variation distance as the test statistic. The observed TVD was approximately **0.179**, and the p-value from the permutation test was **less than 0.001**. Since this p-value is below the significance level of 0.05, we reject the null hypothesis. This suggests that the distribution of `CAUSE.CATEGORY` is significantly different depending on whether `DEMAND.LOSS.MW` is missing. In other words, the missingness of `DEMAND.LOSS.MW` appears to depend on `CAUSE.CATEGORY`.
 
-This result suggests that the missingness of `DEMAND.LOSS.MW` is not MCAR, since it depends on an observed column in the dataset. Because the missingness is related to an observed variable, this result is more consistent with MAR.
+Following the missingness flowchart, the missingness of `DEMAND.LOSS.MW` does not appear to be missing by design, since the missing demand loss value cannot be exactly determined from the other columns. We also cannot conclude that it is NMAR from the observed data alone, because that would require reasoning that the missingness depends on the unobserved `DEMAND.LOSS.MW` values themselves. However, our permutation test shows that the missingness of `DEMAND.LOSS.MW` depends on the observed column `CAUSE.CATEGORY`. Therefore, the missingness is not MCAR and is more consistent with MAR.
 
 <iframe
   src="assets/missingness-cause-category.html"
@@ -317,7 +317,7 @@ Our model is unfair. The RMSE for high-population states is different from the R
 **Test Statistic:**
 The absolute difference in RMSE between the two groups:
 
-**|RMSE for high-population states − RMSE for low-population states|**
+<strong>Absolute difference = |RMSE for high-population states − RMSE for low-population states|</strong>
 
 We used a significance level of **0.05**. Since the alternative hypothesis is that the model performs differently for the two groups, we used an absolute difference in RMSE as the test statistic.
 
