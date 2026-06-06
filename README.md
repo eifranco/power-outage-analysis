@@ -38,13 +38,13 @@ The first step in this project was cleaning the outage dataset so that it could 
 
 ### Data Cleaning
 
-We started by loading the Excel file using the correct header row. The first few rows of the spreadsheet contained title information, notes, and unit descriptions, so we skipped the unnecessary rows and removed the row that only contained units. We also dropped the variables column because it was part of the spreadsheet formatting and did not provide useful information for my analysis.
+We started by loading the Excel file using the correct header row. The first few rows of the spreadsheet contained title information, notes, and unit descriptions, so we skipped the unnecessary rows and removed the row that only contained units. We also dropped the variables column because it was part of the spreadsheet formatting and did not provide useful information for our analysis.
 
 Next, we combined the separate outage start date and start time columns into one timestamp column called OUTAGE.START. We did the same for the restoration date and restoration time columns, creating a new timestamp column called OUTAGE.RESTORATION. This made the dataset easier to work with because each outage now has one clear start timestamp and one clear restoration timestamp.
 
 After creating the timestamp columns, we created additional time-based columns from OUTAGE.START: START.YEAR, START.MONTH, START.HOUR, and START.DAY_OF_WEEK. These columns allow me to analyze whether outage patterns vary by year, month, time of day, or day of the week.
 
-We also created a COMPUTED.DURATION column by subtracting OUTAGE.START from OUTAGE.RESTORATION and converting the result into minutes. We compared this computed duration to the original OUTAGE.DURATION column to check whether the provided duration values were consistent with the timestamp data. Most values matched, but some differed by exactly 60 minutes, which may be due to time recording conventions or daylight saving time. Because OUTAGE.DURATION was provided directly in the original dataset, we kept it as the main duration column for my analysis.
+We also created a COMPUTED.DURATION column by subtracting OUTAGE.START from OUTAGE.RESTORATION and converting the result into minutes. We compared this computed duration to the original OUTAGE.DURATION column to check whether the provided duration values were consistent with the timestamp data. Most values matched, but some differed by exactly 60 minutes, which may be due to time recording conventions or daylight saving time. Because OUTAGE.DURATION was provided directly in the original dataset, we kept it as the main duration column for our analysis.
 
 The main columns we focused on for this part of the project include YEAR, MONTH, U.S._STATE, NERC.REGION, CLIMATE.REGION, CLIMATE.CATEGORY, CAUSE.CATEGORY, OUTAGE.DURATION, DEMAND.LOSS.MW, CUSTOMERS.AFFECTED, OUTAGE.START, and OUTAGE.RESTORATION.
 
@@ -60,7 +60,7 @@ The first few rows of the cleaned DataFrame are shown below, with a smaller set 
 
 
 ### Univariate Analysis
-The histogram below shows the distribution of `OUTAGE.DURATION`, measured in minutes. we used a log scale on the y-axis because outage durations are highly right-skewed: most outages are relatively short compared to the longest outages, but a small number of major outages last for much longer. Only 7 outages out of 1534 lasted longer than 40,000 minutes.
+The histogram below shows the distribution of `OUTAGE.DURATION`, measured in minutes. We used a log scale on the y-axis because outage durations are highly right-skewed: most outages are relatively short compared to the longest outages, but a small number of major outages last for much longer. Only 7 outages out of 1534 lasted longer than 40,000 minutes.
 
 <iframe
   src="assets/outage-duration-distribution.html"
@@ -68,8 +68,6 @@ The histogram below shows the distribution of `OUTAGE.DURATION`, measured in min
   height="600"
   frameborder="0"
 ></iframe>
-
-### Bivariate Analysis
 
 The bar chart below shows the number of major power outages in each `CAUSE.CATEGORY`. This helps summarize which causes appear most frequently in the dataset. Severe weather is one of the most common categories, which supports looking more closely at whether severe weather outages are also associated with longer outage durations.
 
@@ -81,6 +79,8 @@ The bar chart below shows the number of major power outages in each `CAUSE.CATEG
 ></iframe>
 
 
+### Bivariate Analysis
+
 The bar chart below shows the top 15 states by average outage duration after removing outages longer than 40,000 minutes. We removed these extremely long outages so that a small number of outliers would not dominate the state averages. This plot shows that average outage duration varies noticeably by state, suggesting that location may be associated with outage severity. However, these averages should be interpreted carefully because some states may have fewer outage records than others.
 
 <iframe
@@ -91,7 +91,7 @@ The bar chart below shows the top 15 states by average outage duration after rem
 ></iframe>
 
 
-The box plot below shows the distribution of `OUTAGE.DURATION` across different `CAUSE.CATEGORY` values after removing outages longer than 40,000 minutes. we excluded these extreme values so that the main patterns across cause categories would be easier to interpret. This plot suggests that outage duration varies noticeably by cause, with some categories—especially severe weather—showing longer typical outage durations and greater variability than others.
+The box plot below shows the distribution of `OUTAGE.DURATION` across different `CAUSE.CATEGORY` values after removing outages longer than 40,000 minutes. We excluded these extreme values so that the main patterns across cause categories would be easier to interpret. This plot suggests that outage duration varies noticeably by cause, with some categories—especially severe weather—showing longer typical outage durations and greater variability than others.
 
 <iframe
   src="assets/outage-duration-by-cause-under-40k.html"
@@ -196,14 +196,14 @@ Again, we used total variation distance as the test statistic because `START.DAY
 
 ## Hypothesis Testing
 
-For my hypothesis test, we wanted to investigate whether outages caused by severe weather tend to be more severe than outages caused by other factors. Since my project focuses on outage severity, we used `OUTAGE.DURATION` as the main severity measure.
+For our  hypothesis test, we wanted to investigate whether outages caused by severe weather tend to be more severe than outages caused by other factors. Since our project focuses on outage severity, we used `OUTAGE.DURATION` as the main severity measure.
 
 The two columns used in this hypothesis test were:
 
 | Column            | Description                                                                                                                       |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `CAUSE.CATEGORY`  | The broad cause of the outage. we used this column to separate outages into severe weather outages and non-severe-weather outages. |
-| `OUTAGE.DURATION` | The duration of the outage in minutes. we used this column to measure outage severity.                                             |
+| `CAUSE.CATEGORY`  | The broad cause of the outage. We used this column to separate outages into severe weather outages and non-severe-weather outages. |
+| `OUTAGE.DURATION` | The duration of the outage in minutes. We used this column to measure outage severity.                                             |
 
 ### Hypotheses
 
